@@ -17,53 +17,52 @@
   .prev{background:#ddd}
   .danger{background:#c62828;color:#fff}
   input[type="text"]{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px}
-  img{max-width:100%;border-radius:10px;display:block;margin:0 auto}
+  img{max-width:100%;border-radius:10px;display:block;margin:10px auto 0 auto}
+  .big{font-size:28px;font-weight:900}
 
-  /* Wheel picker */
+  /* Wheel picker (ROBUSTO) */
   .wheelWrap{margin-top:14px}
   .wheelBox{
     position:relative;
-    height:160px;
+    height:200px;
     border:1px solid #eee;
     border-radius:14px;
     overflow:hidden;
     background:#fafafa;
   }
   .wheel{
-    height:160px;
+    height:200px;
     overflow-y:auto;
-    scroll-snap-type:y mandatory;
+    scroll-behavior:smooth;
     -webkit-overflow-scrolling:touch;
-    padding:52px 0; /* spazio sopra/sotto per centrare */
   }
   .wheel::-webkit-scrollbar{width:8px}
   .wheelItem{
-    height:40px;
+    height:44px;
     display:flex;
     align-items:center;
     justify-content:center;
     font-size:22px;
-    scroll-snap-align:center;
     color:#555;
+    user-select:none;
   }
-  .wheelItem.active{color:#000;font-weight:800}
+  .wheelItem.active{color:#000;font-weight:900}
+  .wheelSpacer{height:78px;} /* (200-44)/2 */
   .wheelMarker{
     position:absolute;
     left:0; right:0;
     top:50%;
     transform:translateY(-50%);
-    height:40px;
-    border-top:2px solid rgba(0,0,0,.08);
-    border-bottom:2px solid rgba(0,0,0,.08);
-    pointer-events:none;
+    height:44px;
+    border-top:2px solid rgba(0,0,0,.10);
+    border-bottom:2px solid rgba(0,0,0,.10);
     background:rgba(255,255,255,.55);
+    pointer-events:none;
   }
 
   table{width:100%;border-collapse:collapse;margin-top:10px}
-  th,td{border-bottom:1px solid #eee;padding:10px;text-align:left}
+  th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
   th{background:#fafafa}
-
-  .big{font-size:28px;font-weight:900}
 </style>
 </head>
 
@@ -84,6 +83,7 @@
   <!-- VALUTAZIONE -->
   <div class="card hidden" id="evalCard">
     <div class="small"><span class="badge">Animal ID:</span> <b id="animalIdLabel"></b></div>
+    <!-- Titolo rimosso: è già nell'immagine -->
     <img id="image" alt="guida valutazione">
 
     <div class="wheelWrap">
@@ -125,7 +125,7 @@
     <div class="small">Lista animali valutati (salvata anche se ricarichi la pagina).</div>
     <table>
       <thead>
-        <tr><th>#</th><th>Animal ID</th><th>BCS</th></tr>
+        <tr><th>#</th><th>Animal ID</th><th>BCS</th><th>Dettagli</th></tr>
       </thead>
       <tbody id="logBody"></tbody>
     </table>
@@ -133,10 +133,25 @@
 
 </div>
 
+<!-- MODAL DETTAGLI -->
+<div id="modal" class="hidden" style="
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;">
+  <div style="background:#fff;border-radius:14px;max-width:560px;width:100%;padding:16px;">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+      <div style="font-weight:900">Dettagli valutazione</div>
+      <button id="closeModal" class="prev">Chiudi</button>
+    </div>
+    <div class="small" id="modalHeader" style="margin-top:8px"></div>
+    <div id="modalBody" style="margin-top:10px;line-height:1.7"></div>
+  </div>
+</div>
+
 <script>
 /* =======================
    CONFIG
 ======================= */
+// immagini (devono esistere in img/s1.png ... img/s8.png)
 const sections = [
   { img:"img/s1.png" },
   { img:"img/s2.png" },
@@ -148,46 +163,76 @@ const sections = [
   { img:"img/s8.png" },
 ];
 
-// Pesi (se vuoi li personalizziamo)
+// nomi sezione per i dettagli
+const sectionNames = [
+  "Profilo dei processi spinosi (PS)",
+  "Profilo tra PS e PT",
+  "Profilo dei processi trasversi (PT)",
+  "Profilo soprastante il fianco",
+  "Tuberosità coxale e ischiatica",
+  "Regione tra natica ed anca",
+  "Profilo tra le anche",
+  "Area attacco coda – punta natiche"
+];
+
+// pesi (se vuoi li cambi)
 const weights = [1,1,1,1,1,1,1,1];
 
-// valori picker
+// valori ammessi
 const VALUES = [];
 for(let v=1.00; v<=5.0001; v+=0.25) VALUES.push(Number(v.toFixed(2)));
 
 /* =======================
-   STORAGE (taccuino)
+   STORAGE (taccuino + dettagli)
 ======================= */
-const STORAGE_KEY = "bcs_taccuino_v3";
+const STORAGE_KEY = "bcs_taccuino_v4";
 
 function loadLog(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
   catch { return []; }
 }
 function saveLog(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
-function addToLog(animalId, bcs){
+
+function addToLog(animalId, bcs, sectionScores){
   const log = loadLog();
-  log.push({ animalId, bcs:Number(bcs.toFixed(2)), ts:Date.now() });
+  log.push({
+    animalId,
+    bcs: Number(bcs.toFixed(2)),
+    sections: sectionScores.map(x => Number(x.toFixed(2))),
+    ts: Date.now()
+  });
   saveLog(log);
   renderLog();
 }
+
 function clearLog(){
   localStorage.removeItem(STORAGE_KEY);
   renderLog();
 }
+
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
 function renderLog(){
   const log = loadLog();
   logBody.innerHTML = "";
   log.forEach((r, idx) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${idx+1}</td><td>${escapeHtml(r.animalId)}</td><td><b>${r.bcs.toFixed(2)}</b></td>`;
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td>${escapeHtml(r.animalId)}</td>
+      <td><b>${Number(r.bcs).toFixed(2)}</b></td>
+      <td><button class="prev detailBtn" data-idx="${idx}">Vedi</button></td>
+    `;
     logBody.appendChild(tr);
   });
-}
-function escapeHtml(s){
-  return String(s)
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  document.querySelectorAll(".detailBtn").forEach(btn => {
+    btn.onclick = () => showDetails(Number(btn.dataset.idx));
+  });
 }
 
 /* =======================
@@ -222,6 +267,15 @@ const shareHint = document.getElementById("shareHint");
 
 const logBody = document.getElementById("logBody");
 
+// modal
+const modal = document.getElementById("modal");
+const closeModal = document.getElementById("closeModal");
+const modalHeader = document.getElementById("modalHeader");
+const modalBody = document.getElementById("modalBody");
+
+closeModal.onclick = () => modal.classList.add("hidden");
+modal.onclick = (e) => { if(e.target === modal) modal.classList.add("hidden"); };
+
 /* =======================
    STATO valutazione
 ======================= */
@@ -230,10 +284,15 @@ let values = Array(8).fill(3.00);
 let currentAnimalId = "";
 
 /* =======================
-   Wheel: build + sync
+   WHEEL (robusta: no salti, arriva a 5.00)
 ======================= */
 function buildWheel(){
   wheel.innerHTML = "";
+
+  const top = document.createElement("div");
+  top.className = "wheelSpacer";
+  wheel.appendChild(top);
+
   VALUES.forEach((val) => {
     const div = document.createElement("div");
     div.className = "wheelItem";
@@ -241,47 +300,73 @@ function buildWheel(){
     div.dataset.value = val.toFixed(2);
     wheel.appendChild(div);
   });
+
+  const bot = document.createElement("div");
+  bot.className = "wheelSpacer";
+  wheel.appendChild(bot);
+}
+
+function getWheelItems(){
+  return [...wheel.querySelectorAll(".wheelItem")];
+}
+
+function getClosestValueIndex(){
+  const box = wheel.getBoundingClientRect();
+  const centerY = box.top + box.height / 2;
+
+  const items = getWheelItems();
+  let bestIdx = 0;
+  let bestDist = Infinity;
+
+  items.forEach((el, idx) => {
+    const r = el.getBoundingClientRect();
+    const elCenter = r.top + r.height/2;
+    const dist = Math.abs(elCenter - centerY);
+    if(dist < bestDist){
+      bestDist = dist;
+      bestIdx = idx;
+    }
+  });
+
+  return bestIdx;
 }
 
 function setWheelToValue(val){
   const idx = VALUES.indexOf(Number(val.toFixed(2)));
-  const y = idx * 40; // item height
-  wheel.scrollTo({ top: y, behavior: "instant" });
-  updateActiveFromScroll();
+  const items = getWheelItems();
+  const target = items[Math.max(0, idx)];
+  if(target){
+    target.scrollIntoView({ block:"center", behavior:"instant" });
+    updateActiveItem(idx);
+  }
 }
 
-let wheelScrollTimer = null;
+let wheelTimer = null;
 wheel.addEventListener("scroll", () => {
-  if(wheelScrollTimer) clearTimeout(wheelScrollTimer);
-  wheelScrollTimer = setTimeout(() => {
-    snapWheel();
-  }, 80);
-  updateActiveFromScroll();
+  updateActiveItem(getClosestValueIndex());
+  if(wheelTimer) clearTimeout(wheelTimer);
+  wheelTimer = setTimeout(() => snapWheel(), 120);
 });
 
 function snapWheel(){
-  const idx = Math.round(wheel.scrollTop / 40);
-  const clamped = Math.max(0, Math.min(VALUES.length-1, idx));
-  wheel.scrollTo({ top: clamped * 40, behavior: "smooth" });
+  const idx = getClosestValueIndex();
+  const items = getWheelItems();
+  const target = items[idx];
+  if(target) target.scrollIntoView({ block:"center", behavior:"smooth" });
 
-  const chosen = VALUES[clamped];
+  const chosen = VALUES[idx];
   values[i] = chosen;
   valueText.textContent = chosen.toFixed(2);
-  updateActiveItem(clamped);
-}
-
-function updateActiveFromScroll(){
-  const idx = Math.round(wheel.scrollTop / 40);
   updateActiveItem(idx);
 }
 
 function updateActiveItem(activeIdx){
-  const items = wheel.querySelectorAll(".wheelItem");
+  const items = getWheelItems();
   items.forEach((el, idx) => el.classList.toggle("active", idx === activeIdx));
 }
 
 /* =======================
-   Flow UI
+   FLOW UI
 ======================= */
 function showStart(){
   startCard.classList.remove("hidden");
@@ -301,6 +386,7 @@ function showEval(){
 function showResult(avg){
   evalCard.classList.add("hidden");
   resultCard.classList.remove("hidden");
+
   resultAnimalId.textContent = currentAnimalId;
   finalScore.textContent = avg.toFixed(2);
 
@@ -310,7 +396,6 @@ function showResult(avg){
   else if(avg<4) finalComment.textContent="Condizione ottimale";
   else finalComment.textContent="Condizione grassa";
 
-  // share support hint
   if(navigator.share){
     shareHint.textContent = "“Condividi” usa il menu del telefono (WhatsApp/Mail/Telegram, ecc.).";
   } else {
@@ -335,16 +420,39 @@ function loadStep(){
 }
 
 /* =======================
+   DETTAGLI modal
+======================= */
+function showDetails(index){
+  const log = loadLog();
+  const r = log[index];
+  if(!r) return;
+
+  modalHeader.textContent = `Animal ID: ${r.animalId} — BCS: ${Number(r.bcs).toFixed(2)}`;
+
+  const scores = r.sections || [];
+  const lines = scores.map((v, idx) => `${escapeHtml(sectionNames[idx] || ("Sezione " + (idx+1)))}: <b>${Number(v).toFixed(2)}</b>`);
+  modalBody.innerHTML = lines.join("<br>");
+
+  modal.classList.remove("hidden");
+}
+
+/* =======================
    Export helpers
 ======================= */
-function makeTextLog(){
+function makeTextLog(includeDetails=true){
   const log = loadLog();
   if(!log.length) return "Nessun record.";
-  return log.map((r, idx) => `${idx+1}) ${r.animalId} - BCS ${Number(r.bcs).toFixed(2)}`).join("\n");
+
+  return log.map((r, idx) => {
+    const head = `${idx+1}) ${r.animalId} - BCS ${Number(r.bcs).toFixed(2)}`;
+    if(!includeDetails) return head;
+
+    const details = (r.sections || []).map((v, i) => `  - ${sectionNames[i] || ("Sezione "+(i+1))}: ${Number(v).toFixed(2)}`).join("\n");
+    return head + "\n" + details;
+  }).join("\n\n");
 }
 
 async function copyToClipboard(text){
-  // fallback robusto
   try {
     await navigator.clipboard.writeText(text);
     alert("Lista copiata negli appunti!");
@@ -361,12 +469,23 @@ async function copyToClipboard(text){
 
 function downloadCSV(){
   const log = loadLog();
-  const rows = [["Animal ID","BCS","Timestamp"]];
-  log.forEach(r => rows.push([r.animalId, Number(r.bcs).toFixed(2), new Date(r.ts).toISOString()]));
-  const csv = rows.map(row => row.map(cell => `"${String(cell).replaceAll('"','""')}"`).join(",")).join("\n");
+  const header = ["Animal ID","BCS", ...sectionNames, "Timestamp"];
+  const rows = [header];
 
+  log.forEach(r => {
+    const row = [
+      r.animalId,
+      Number(r.bcs).toFixed(2),
+      ...(r.sections || []).map(v => Number(v).toFixed(2)),
+      new Date(r.ts).toISOString()
+    ];
+    rows.push(row);
+  });
+
+  const csv = rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"','""')}"`).join(",")).join("\n");
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
   a.download = "bcs_log.csv";
@@ -392,15 +511,19 @@ prevBtn.onclick = () => {
 };
 
 nextBtn.onclick = () => {
-  if(i<7){ i++; loadStep(); return; }
+  if(i<7){
+    i++;
+    loadStep();
+    return;
+  }
 
   // calcolo media ponderata
   let num=0, den=0;
   for(let k=0;k<8;k++){ num += values[k]*weights[k]; den += weights[k]; }
   const avg = num/den;
 
-  // salva taccuino
-  addToLog(currentAnimalId, avg);
+  // salva con dettagli
+  addToLog(currentAnimalId, avg, values);
 
   // mostra risultato
   showResult(avg);
@@ -413,18 +536,18 @@ clearBtn.onclick = () => {
 };
 
 copyBtn.onclick = async () => {
-  await copyToClipboard(makeTextLog());
+  await copyToClipboard(makeTextLog(true)); // include dettagli
 };
 
 csvBtn.onclick = () => downloadCSV();
 
 shareBtn.onclick = async () => {
-  const text = makeTextLog();
+  const text = makeTextLog(true);
   if(navigator.share){
     try{
       await navigator.share({ title:"BCS Log", text });
     }catch(e){
-      // se l'utente annulla, non facciamo nulla
+      // annullato dall'utente -> niente
     }
   } else {
     await copyToClipboard(text);
@@ -432,7 +555,7 @@ shareBtn.onclick = async () => {
 };
 
 /* =======================
-   Start
+   START
 ======================= */
 buildWheel();
 renderLog();
