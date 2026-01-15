@@ -8,7 +8,6 @@
   body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
   .container{max-width:980px;margin:auto;padding:20px}
   .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1);margin-bottom:16px}
-  .hidden{display:none}
   .small{color:#555;font-size:13px;margin-top:6px}
   .badge{display:inline-block;background:#eee;padding:4px 8px;border-radius:999px;font-size:12px}
   .buttons{display:flex;justify-content:space-between;gap:10px;margin-top:15px;flex-wrap:wrap}
@@ -19,6 +18,7 @@
   input[type="text"]{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px}
   img{max-width:100%;border-radius:10px;display:block;margin:10px auto 0 auto}
   .big{font-size:28px;font-weight:900}
+  .hidden{display:none}
 
   /* Wheel picker (ROBUSTO) */
   .wheelWrap{margin-top:14px}
@@ -63,6 +63,19 @@
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
   th{background:#fafafa}
+
+  /* Modal */
+  #modal{
+    display:none; /* IMPORTANTISSIMO: parte chiuso */
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.45);
+    align-items:center; justify-content:center;
+    padding:16px; z-index:9999;
+  }
+  #modalCard{
+    background:#fff;border-radius:14px;max-width:560px;width:100%;padding:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
 </style>
 </head>
 
@@ -83,7 +96,6 @@
   <!-- VALUTAZIONE -->
   <div class="card hidden" id="evalCard">
     <div class="small"><span class="badge">Animal ID:</span> <b id="animalIdLabel"></b></div>
-    <!-- Titolo rimosso: è già nell'immagine -->
     <img id="image" alt="guida valutazione">
 
     <div class="wheelWrap">
@@ -133,14 +145,12 @@
 
 </div>
 
-<!-- MODAL DETTAGLI -->
-<div id="modal" class="hidden" style="
-  position:fixed;inset:0;background:rgba(0,0,0,.45);
-  display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;">
-  <div style="background:#fff;border-radius:14px;max-width:560px;width:100%;padding:16px;">
+<!-- MODAL DETTAGLI (fixato) -->
+<div id="modal">
+  <div id="modalCard">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
       <div style="font-weight:900">Dettagli valutazione</div>
-      <button id="closeModal" class="prev">Chiudi</button>
+      <button id="closeModal" class="prev" type="button">Chiudi</button>
     </div>
     <div class="small" id="modalHeader" style="margin-top:8px"></div>
     <div id="modalBody" style="margin-top:10px;line-height:1.7"></div>
@@ -151,7 +161,6 @@
 /* =======================
    CONFIG
 ======================= */
-// immagini (devono esistere in img/s1.png ... img/s8.png)
 const sections = [
   { img:"img/s1.png" },
   { img:"img/s2.png" },
@@ -163,7 +172,6 @@ const sections = [
   { img:"img/s8.png" },
 ];
 
-// nomi sezione per i dettagli
 const sectionNames = [
   "Profilo dei processi spinosi (PS)",
   "Profilo tra PS e PT",
@@ -175,17 +183,17 @@ const sectionNames = [
   "Area attacco coda – punta natiche"
 ];
 
-// pesi (se vuoi li cambi)
+// Pesi (modifica se vuoi)
 const weights = [1,1,1,1,1,1,1,1];
 
-// valori ammessi
+// Valori ammessi
 const VALUES = [];
 for(let v=1.00; v<=5.0001; v+=0.25) VALUES.push(Number(v.toFixed(2)));
 
 /* =======================
-   STORAGE (taccuino + dettagli)
+   STORAGE
 ======================= */
-const STORAGE_KEY = "bcs_taccuino_v4";
+const STORAGE_KEY = "bcs_taccuino_v5";
 
 function loadLog(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
@@ -214,25 +222,6 @@ function escapeHtml(s){
   return String(s)
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
     .replaceAll('"',"&quot;").replaceAll("'","&#039;");
-}
-
-function renderLog(){
-  const log = loadLog();
-  logBody.innerHTML = "";
-  log.forEach((r, idx) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${idx+1}</td>
-      <td>${escapeHtml(r.animalId)}</td>
-      <td><b>${Number(r.bcs).toFixed(2)}</b></td>
-      <td><button class="prev detailBtn" data-idx="${idx}">Vedi</button></td>
-    `;
-    logBody.appendChild(tr);
-  });
-
-  document.querySelectorAll(".detailBtn").forEach(btn => {
-    btn.onclick = () => showDetails(Number(btn.dataset.idx));
-  });
 }
 
 /* =======================
@@ -267,14 +256,17 @@ const shareHint = document.getElementById("shareHint");
 
 const logBody = document.getElementById("logBody");
 
-// modal
+// Modal (fix)
 const modal = document.getElementById("modal");
 const closeModal = document.getElementById("closeModal");
 const modalHeader = document.getElementById("modalHeader");
 const modalBody = document.getElementById("modalBody");
 
-closeModal.onclick = () => modal.classList.add("hidden");
-modal.onclick = (e) => { if(e.target === modal) modal.classList.add("hidden"); };
+function openModal(){ modal.style.display = "flex"; }
+function closeModalFn(){ modal.style.display = "none"; }
+
+closeModal.onclick = closeModalFn;
+modal.onclick = (e) => { if(e.target === modal) closeModalFn(); };
 
 /* =======================
    STATO valutazione
@@ -284,7 +276,7 @@ let values = Array(8).fill(3.00);
 let currentAnimalId = "";
 
 /* =======================
-   WHEEL (robusta: no salti, arriva a 5.00)
+   WHEEL (robusta)
 ======================= */
 function buildWheel(){
   wheel.innerHTML = "";
@@ -331,6 +323,11 @@ function getClosestValueIndex(){
   return bestIdx;
 }
 
+function updateActiveItem(activeIdx){
+  const items = getWheelItems();
+  items.forEach((el, idx) => el.classList.toggle("active", idx === activeIdx));
+}
+
 function setWheelToValue(val){
   const idx = VALUES.indexOf(Number(val.toFixed(2)));
   const items = getWheelItems();
@@ -360,13 +357,8 @@ function snapWheel(){
   updateActiveItem(idx);
 }
 
-function updateActiveItem(activeIdx){
-  const items = getWheelItems();
-  items.forEach((el, idx) => el.classList.toggle("active", idx === activeIdx));
-}
-
 /* =======================
-   FLOW UI
+   UI FLOW
 ======================= */
 function showStart(){
   startCard.classList.remove("hidden");
@@ -374,23 +366,26 @@ function showStart(){
   resultCard.classList.add("hidden");
   animalIdInput.value = "";
   currentAnimalId = "";
+  closeModalFn(); // sicurezza
 }
 
 function showEval(){
   startCard.classList.add("hidden");
   evalCard.classList.remove("hidden");
   resultCard.classList.add("hidden");
+  closeModalFn(); // sicurezza
   loadStep();
 }
 
 function showResult(avg){
   evalCard.classList.add("hidden");
   resultCard.classList.remove("hidden");
+  closeModalFn(); // sicurezza
 
   resultAnimalId.textContent = currentAnimalId;
   finalScore.textContent = avg.toFixed(2);
 
-  // placeholder commenti (poi me li dai precisi)
+  // placeholder commenti (poi li mettiamo reali)
   if(avg<2) finalComment.textContent="Condizione molto magra";
   else if(avg<3) finalComment.textContent="Condizione magra";
   else if(avg<4) finalComment.textContent="Condizione ottimale";
@@ -420,24 +415,46 @@ function loadStep(){
 }
 
 /* =======================
-   DETTAGLI modal
+   DETTAGLI
 ======================= */
 function showDetails(index){
   const log = loadLog();
   const r = log[index];
-  if(!r) return;
+  if(!r || !Array.isArray(r.sections)){
+    alert("Nessun dettaglio disponibile per questo record.");
+    return;
+  }
 
   modalHeader.textContent = `Animal ID: ${r.animalId} — BCS: ${Number(r.bcs).toFixed(2)}`;
 
-  const scores = r.sections || [];
-  const lines = scores.map((v, idx) => `${escapeHtml(sectionNames[idx] || ("Sezione " + (idx+1)))}: <b>${Number(v).toFixed(2)}</b>`);
+  const lines = r.sections.map((v, idx) =>
+    `${escapeHtml(sectionNames[idx] || ("Sezione " + (idx+1)))}: <b>${Number(v).toFixed(2)}</b>`
+  );
   modalBody.innerHTML = lines.join("<br>");
+  openModal();
+}
 
-  modal.classList.remove("hidden");
+function renderLog(){
+  const log = loadLog();
+  logBody.innerHTML = "";
+  log.forEach((r, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td>${escapeHtml(r.animalId)}</td>
+      <td><b>${Number(r.bcs).toFixed(2)}</b></td>
+      <td><button class="prev detailBtn" data-idx="${idx}" type="button">Vedi</button></td>
+    `;
+    logBody.appendChild(tr);
+  });
+
+  document.querySelectorAll(".detailBtn").forEach(btn => {
+    btn.onclick = () => showDetails(Number(btn.dataset.idx));
+  });
 }
 
 /* =======================
-   Export helpers
+   EXPORT
 ======================= */
 function makeTextLog(includeDetails=true){
   const log = loadLog();
@@ -447,7 +464,9 @@ function makeTextLog(includeDetails=true){
     const head = `${idx+1}) ${r.animalId} - BCS ${Number(r.bcs).toFixed(2)}`;
     if(!includeDetails) return head;
 
-    const details = (r.sections || []).map((v, i) => `  - ${sectionNames[i] || ("Sezione "+(i+1))}: ${Number(v).toFixed(2)}`).join("\n");
+    const details = (r.sections || []).map((v, i) =>
+      `  - ${sectionNames[i] || ("Sezione "+(i+1))}: ${Number(v).toFixed(2)}`
+    ).join("\n");
     return head + "\n" + details;
   }).join("\n\n");
 }
@@ -496,7 +515,7 @@ function downloadCSV(){
 }
 
 /* =======================
-   Eventi
+   EVENTI
 ======================= */
 startBtn.onclick = () => {
   const id = animalIdInput.value.trim();
@@ -522,10 +541,7 @@ nextBtn.onclick = () => {
   for(let k=0;k<8;k++){ num += values[k]*weights[k]; den += weights[k]; }
   const avg = num/den;
 
-  // salva con dettagli
   addToLog(currentAnimalId, avg, values);
-
-  // mostra risultato
   showResult(avg);
 };
 
@@ -536,7 +552,7 @@ clearBtn.onclick = () => {
 };
 
 copyBtn.onclick = async () => {
-  await copyToClipboard(makeTextLog(true)); // include dettagli
+  await copyToClipboard(makeTextLog(true));
 };
 
 csvBtn.onclick = () => downloadCSV();
@@ -544,11 +560,8 @@ csvBtn.onclick = () => downloadCSV();
 shareBtn.onclick = async () => {
   const text = makeTextLog(true);
   if(navigator.share){
-    try{
-      await navigator.share({ title:"BCS Log", text });
-    }catch(e){
-      // annullato dall'utente -> niente
-    }
+    try { await navigator.share({ title:"BCS Log", text }); }
+    catch(e){ /* annullato */ }
   } else {
     await copyToClipboard(text);
   }
