@@ -1,1 +1,111 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>BCS Unicatt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
+.container{max-width:900px;margin:auto;padding:20px}
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1)}
+h2{margin:0 0 10px 0}
+img{max-width:100%;border-radius:10px}
+.slider{width:100%}
+.big{font-size:28px;font-weight:bold}
+.buttons{display:flex;justify-content:space-between;margin-top:15px}
+button{padding:10px 16px;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
+.next{background:#111;color:#fff}
+.prev{background:#ddd}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="card">
+    <h2 id="title"></h2>
+    <img id="image">
+    <p>Valore selezionato: <span class="big" id="value">3.00</span></p>
+    <input id="slider" class="slider" type="range" min="1" max="5" step="0.25" value="3">
+    <div class="buttons">
+      <button class="prev" id="prev">Indietro</button>
+      <button class="next" id="next">Avanti</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="result">
+    <h2>Risultato finale</h2>
+    <p>Media ponderata:</p>
+    <p class="big" id="finalScore"></p>
+    <p id="finalComment"></p>
+  </div>
+</div>
+
+<script>
+const sections = [
+ {title:"Profilo dei processi spinosi (PS)", img:"img/s1.png"},
+ {title:"Profilo tra PS e PT", img:"img/s2.png"},
+ {title:"Profilo dei processi trasversi (PT)", img:"img/s3.png"},
+ {title:"Profilo soprastante il fianco", img:"img/s4.png"},
+ {title:"Tuberosità coxale e ischiatica", img:"img/s5.png"},
+ {title:"Regione tra natica ed anca", img:"img/s6.png"},
+ {title:"Profilo tra le anche", img:"img/s7.png"},
+ {title:"Area attacco coda – punta natiche", img:"img/s8.png"}
+];
+
+// 👉 PESI (modificali se vuoi)
+const weights = [1,1,1,1,1,1,1,1];
+
+let i = 0;
+let values = Array(8).fill(3);
+
+const title = document.getElementById("title");
+const image = document.getElementById("image");
+const slider = document.getElementById("slider");
+const valueText = document.getElementById("value");
+const prev = document.getElementById("prev");
+const next = document.getElementById("next");
+const result = document.getElementById("result");
+const finalScore = document.getElementById("finalScore");
+const finalComment = document.getElementById("finalComment");
+
+function load(){
+  title.textContent = sections[i].title;
+  image.src = sections[i].img;
+  slider.value = values[i];
+  valueText.textContent = values[i].toFixed(2);
+  prev.style.visibility = i===0?"hidden":"visible";
+  next.textContent = i===7?"Calcola":"Avanti";
+}
+
+slider.oninput = ()=>{
+  values[i]=parseFloat(slider.value);
+  valueText.textContent = values[i].toFixed(2);
+};
+
+prev.onclick = ()=>{ if(i>0){ i--; load(); } };
+
+next.onclick = ()=>{
+  if(i<7){ i++; load(); }
+  else{
+    let num=0,den=0;
+    for(let k=0;k<8;k++){ num+=values[k]*weights[k]; den+=weights[k]; }
+    const avg=num/den;
+    finalScore.textContent=avg.toFixed(2);
+
+    // 👉 COMMENTI FINALI (placeholder)
+    if(avg<2) finalComment.textContent="Condizione molto magra";
+    else if(avg<3) finalComment.textContent="Condizione magra";
+    else if(avg<4) finalComment.textContent="Condizione ottimale";
+    else finalComment.textContent="Condizione grassa";
+
+    document.querySelector(".card").classList.add("hidden");
+    result.classList.remove("hidden");
+  }
+};
+
+load();
+</script>
+</body>
+</html>
 
