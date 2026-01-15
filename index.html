@@ -5,80 +5,127 @@
 <title>BCS Unicatt</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
-.container{max-width:900px;margin:auto;padding:20px}
-.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1);margin-bottom:16px}
-h2{margin:0 0 10px 0}
-img{max-width:100%;border-radius:10px}
-.slider{width:100%}
-.big{font-size:28px;font-weight:bold}
-.buttons{display:flex;justify-content:space-between;gap:10px;margin-top:15px;flex-wrap:wrap}
-button{padding:10px 16px;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
-.next{background:#111;color:#fff}
-.prev{background:#ddd}
-.danger{background:#c62828;color:#fff}
-.hidden{display:none}
-input[type="text"]{width:100%;padding:12px 12px;border:1px solid #ddd;border-radius:10px;font-size:16px}
-.small{color:#555;font-size:13px;margin-top:6px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border-bottom:1px solid #eee;padding:10px;text-align:left}
-th{background:#fafafa}
-.badge{display:inline-block;background:#eee;padding:4px 8px;border-radius:999px;font-size:12px}
+  body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
+  .container{max-width:980px;margin:auto;padding:20px}
+  .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1);margin-bottom:16px}
+  .hidden{display:none}
+  .small{color:#555;font-size:13px;margin-top:6px}
+  .badge{display:inline-block;background:#eee;padding:4px 8px;border-radius:999px;font-size:12px}
+  .buttons{display:flex;justify-content:space-between;gap:10px;margin-top:15px;flex-wrap:wrap}
+  button{padding:10px 16px;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
+  .next{background:#111;color:#fff}
+  .prev{background:#ddd}
+  .danger{background:#c62828;color:#fff}
+  input[type="text"]{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px}
+  img{max-width:100%;border-radius:10px;display:block;margin:0 auto}
+
+  /* Wheel picker */
+  .wheelWrap{margin-top:14px}
+  .wheelBox{
+    position:relative;
+    height:160px;
+    border:1px solid #eee;
+    border-radius:14px;
+    overflow:hidden;
+    background:#fafafa;
+  }
+  .wheel{
+    height:160px;
+    overflow-y:auto;
+    scroll-snap-type:y mandatory;
+    -webkit-overflow-scrolling:touch;
+    padding:52px 0; /* spazio sopra/sotto per centrare */
+  }
+  .wheel::-webkit-scrollbar{width:8px}
+  .wheelItem{
+    height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    scroll-snap-align:center;
+    color:#555;
+  }
+  .wheelItem.active{color:#000;font-weight:800}
+  .wheelMarker{
+    position:absolute;
+    left:0; right:0;
+    top:50%;
+    transform:translateY(-50%);
+    height:40px;
+    border-top:2px solid rgba(0,0,0,.08);
+    border-bottom:2px solid rgba(0,0,0,.08);
+    pointer-events:none;
+    background:rgba(255,255,255,.55);
+  }
+
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border-bottom:1px solid #eee;padding:10px;text-align:left}
+  th{background:#fafafa}
+
+  .big{font-size:28px;font-weight:900}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-  <!-- 1) START: inserimento Animal ID -->
+  <!-- START -->
   <div class="card" id="startCard">
-    <h2>Nuovo animale</h2>
+    <div style="font-weight:800;font-size:18px">Nuovo animale</div>
+    <div class="small">Inserisci l’ID e premi “Inizia valutazione”.</div>
     <label for="animalId"><b>Animal ID</b></label>
     <input id="animalId" type="text" placeholder="Es. 12345 o codice aziendale">
-    <div class="small">Inserisci l'ID e premi “Inizia valutazione”.</div>
     <div class="buttons">
       <button class="next" id="startBtn">Inizia valutazione</button>
     </div>
   </div>
 
-  <!-- 2) VALUTAZIONE (il tuo flusso) -->
+  <!-- VALUTAZIONE -->
   <div class="card hidden" id="evalCard">
     <div class="small"><span class="badge">Animal ID:</span> <b id="animalIdLabel"></b></div>
-    <h2 id="title"></h2>
     <img id="image" alt="guida valutazione">
-    <p>Valore selezionato: <span class="big" id="value">3.00</span></p>
-    <input id="slider" class="slider" type="range" min="1" max="5" step="0.25" value="3">
+
+    <div class="wheelWrap">
+      <div class="small">Seleziona valore (1.00 → 5.00, step 0.25)</div>
+      <div class="wheelBox">
+        <div class="wheelMarker"></div>
+        <div class="wheel" id="wheel"></div>
+      </div>
+      <p style="margin:10px 0 0 0">Valore selezionato: <span class="big" id="valueText">3.00</span></p>
+    </div>
+
     <div class="buttons">
-      <button class="prev" id="prev">Indietro</button>
-      <button class="next" id="next">Avanti</button>
+      <button class="prev" id="prevBtn">Indietro</button>
+      <button class="next" id="nextBtn">Avanti</button>
     </div>
   </div>
 
-  <!-- 3) RISULTATO -->
+  <!-- RISULTATO -->
   <div class="card hidden" id="resultCard">
-    <h2>Risultato finale</h2>
+    <div style="font-weight:800;font-size:18px">Risultato finale</div>
     <p><span class="badge">Animal ID:</span> <b id="resultAnimalId"></b></p>
-    <p>Media ponderata (BCS):</p>
+    <p>BCS (media ponderata):</p>
     <p class="big" id="finalScore"></p>
     <p id="finalComment"></p>
 
     <div class="buttons">
       <button class="next" id="newAnimalBtn">Nuovo animale</button>
-      <button class="danger" id="clearListBtn">Svuota lista</button>
+      <button class="prev" id="copyBtn">Copia lista</button>
+      <button class="prev" id="csvBtn">Scarica CSV</button>
+      <button class="prev" id="shareBtn">Condividi</button>
+      <button class="danger" id="clearBtn">Svuota lista</button>
     </div>
+    <div class="small" id="shareHint"></div>
   </div>
 
-  <!-- 4) TACCUINO (lista animali) -->
+  <!-- TACCUINO -->
   <div class="card" id="logCard">
-    <h2>Taccuino BCS</h2>
-    <div class="small">Qui trovi tutti gli animali valutati in questa sessione (e resta salvato anche se ricarichi).</div>
+    <div style="font-weight:800;font-size:18px">Taccuino BCS</div>
+    <div class="small">Lista animali valutati (salvata anche se ricarichi la pagina).</div>
     <table>
       <thead>
-        <tr>
-          <th>#</th>
-          <th>Animal ID</th>
-          <th>BCS</th>
-        </tr>
+        <tr><th>#</th><th>Animal ID</th><th>BCS</th></tr>
       </thead>
       <tbody id="logBody"></tbody>
     </table>
@@ -88,28 +135,60 @@ th{background:#fafafa}
 
 <script>
 /* =======================
-   CONFIG (come prima)
+   CONFIG
 ======================= */
 const sections = [
- {title:"Profilo dei processi spinosi (PS)", img:"img/s1.png"},
- {title:"Profilo tra PS e PT", img:"img/s2.png"},
- {title:"Profilo dei processi trasversi (PT)", img:"img/s3.png"},
- {title:"Profilo soprastante il fianco", img:"img/s4.png"},
- {title:"Tuberosità coxale e ischiatica", img:"img/s5.png"},
- {title:"Regione tra natica ed anca", img:"img/s6.png"},
- {title:"Profilo tra le anche", img:"img/s7.png"},
- {title:"Area attacco coda – punta natiche", img:"img/s8.png"}
+  { img:"img/s1.png" },
+  { img:"img/s2.png" },
+  { img:"img/s3.png" },
+  { img:"img/s4.png" },
+  { img:"img/s5.png" },
+  { img:"img/s6.png" },
+  { img:"img/s7.png" },
+  { img:"img/s8.png" },
 ];
 
-// PESI (modificali se vuoi)
+// Pesi (se vuoi li personalizziamo)
 const weights = [1,1,1,1,1,1,1,1];
 
+// valori picker
+const VALUES = [];
+for(let v=1.00; v<=5.0001; v+=0.25) VALUES.push(Number(v.toFixed(2)));
+
 /* =======================
-   STATO
+   STORAGE (taccuino)
 ======================= */
-let i = 0;
-let values = Array(8).fill(3);
-let currentAnimalId = "";
+const STORAGE_KEY = "bcs_taccuino_v3";
+
+function loadLog(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch { return []; }
+}
+function saveLog(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function addToLog(animalId, bcs){
+  const log = loadLog();
+  log.push({ animalId, bcs:Number(bcs.toFixed(2)), ts:Date.now() });
+  saveLog(log);
+  renderLog();
+}
+function clearLog(){
+  localStorage.removeItem(STORAGE_KEY);
+  renderLog();
+}
+function renderLog(){
+  const log = loadLog();
+  logBody.innerHTML = "";
+  log.forEach((r, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${idx+1}</td><td>${escapeHtml(r.animalId)}</td><td><b>${r.bcs.toFixed(2)}</b></td>`;
+    logBody.appendChild(tr);
+  });
+}
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
 
 /* =======================
    DOM
@@ -120,88 +199,90 @@ const resultCard = document.getElementById("resultCard");
 
 const animalIdInput = document.getElementById("animalId");
 const startBtn = document.getElementById("startBtn");
-const animalIdLabel = document.getElementById("animalIdLabel");
 
-const title = document.getElementById("title");
+const animalIdLabel = document.getElementById("animalIdLabel");
 const image = document.getElementById("image");
-const slider = document.getElementById("slider");
-const valueText = document.getElementById("value");
-const prev = document.getElementById("prev");
-const next = document.getElementById("next");
+
+const wheel = document.getElementById("wheel");
+const valueText = document.getElementById("valueText");
+
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
 
 const resultAnimalId = document.getElementById("resultAnimalId");
 const finalScore = document.getElementById("finalScore");
 const finalComment = document.getElementById("finalComment");
 
 const newAnimalBtn = document.getElementById("newAnimalBtn");
-const clearListBtn = document.getElementById("clearListBtn");
+const copyBtn = document.getElementById("copyBtn");
+const csvBtn = document.getElementById("csvBtn");
+const shareBtn = document.getElementById("shareBtn");
+const clearBtn = document.getElementById("clearBtn");
+const shareHint = document.getElementById("shareHint");
 
 const logBody = document.getElementById("logBody");
 
 /* =======================
-   TACCUINO: storage
+   STATO valutazione
 ======================= */
-const STORAGE_KEY = "bcs_log_v1";
+let i = 0;
+let values = Array(8).fill(3.00);
+let currentAnimalId = "";
 
-function loadLog(){
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch(e){
-    return [];
-  }
-}
-
-function saveLog(arr){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
-
-function renderLog(){
-  const log = loadLog();
-  logBody.innerHTML = "";
-  log.forEach((row, idx) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td>${escapeHtml(row.animalId)}</td>
-      <td><b>${Number(row.bcs).toFixed(2)}</b></td>
-    `;
-    logBody.appendChild(tr);
+/* =======================
+   Wheel: build + sync
+======================= */
+function buildWheel(){
+  wheel.innerHTML = "";
+  VALUES.forEach((val) => {
+    const div = document.createElement("div");
+    div.className = "wheelItem";
+    div.textContent = val.toFixed(2);
+    div.dataset.value = val.toFixed(2);
+    wheel.appendChild(div);
   });
 }
 
-function addToLog(animalId, bcs){
-  const log = loadLog();
-  log.push({ animalId, bcs, ts: Date.now() });
-  saveLog(log);
-  renderLog();
+function setWheelToValue(val){
+  const idx = VALUES.indexOf(Number(val.toFixed(2)));
+  const y = idx * 40; // item height
+  wheel.scrollTo({ top: y, behavior: "instant" });
+  updateActiveFromScroll();
 }
 
-function clearLog(){
-  localStorage.removeItem(STORAGE_KEY);
-  renderLog();
+let wheelScrollTimer = null;
+wheel.addEventListener("scroll", () => {
+  if(wheelScrollTimer) clearTimeout(wheelScrollTimer);
+  wheelScrollTimer = setTimeout(() => {
+    snapWheel();
+  }, 80);
+  updateActiveFromScroll();
+});
+
+function snapWheel(){
+  const idx = Math.round(wheel.scrollTop / 40);
+  const clamped = Math.max(0, Math.min(VALUES.length-1, idx));
+  wheel.scrollTo({ top: clamped * 40, behavior: "smooth" });
+
+  const chosen = VALUES[clamped];
+  values[i] = chosen;
+  valueText.textContent = chosen.toFixed(2);
+  updateActiveItem(clamped);
 }
 
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+function updateActiveFromScroll(){
+  const idx = Math.round(wheel.scrollTop / 40);
+  updateActiveItem(idx);
+}
+
+function updateActiveItem(activeIdx){
+  const items = wheel.querySelectorAll(".wheelItem");
+  items.forEach((el, idx) => el.classList.toggle("active", idx === activeIdx));
 }
 
 /* =======================
-   FLOW
+   Flow UI
 ======================= */
-function resetEvaluation(){
-  i = 0;
-  values = Array(8).fill(3);
-  slider.value = 3;
-  valueText.textContent = "3.00";
-}
-
 function showStart(){
   startCard.classList.remove("hidden");
   evalCard.classList.add("hidden");
@@ -223,78 +304,137 @@ function showResult(avg){
   resultAnimalId.textContent = currentAnimalId;
   finalScore.textContent = avg.toFixed(2);
 
-  // commenti placeholder (poi me li dai e li mettiamo precisi)
+  // placeholder commenti (poi me li dai precisi)
   if(avg<2) finalComment.textContent="Condizione molto magra";
   else if(avg<3) finalComment.textContent="Condizione magra";
   else if(avg<4) finalComment.textContent="Condizione ottimale";
   else finalComment.textContent="Condizione grassa";
+
+  // share support hint
+  if(navigator.share){
+    shareHint.textContent = "“Condividi” usa il menu del telefono (WhatsApp/Mail/Telegram, ecc.).";
+  } else {
+    shareHint.textContent = "Su PC “Condividi” potrebbe non funzionare: usa Copia lista o CSV.";
+  }
+}
+
+function resetEvaluation(){
+  i = 0;
+  values = Array(8).fill(3.00);
 }
 
 function loadStep(){
   animalIdLabel.textContent = currentAnimalId;
-  title.textContent = sections[i].title;
   image.src = sections[i].img;
 
-  slider.value = values[i];
-  valueText.textContent = values[i].toFixed(2);
+  prevBtn.style.visibility = i===0 ? "hidden" : "visible";
+  nextBtn.textContent = i===7 ? "Calcola" : "Avanti";
 
-  prev.style.visibility = i===0 ? "hidden" : "visible";
-  next.textContent = i===7 ? "Calcola" : "Avanti";
+  valueText.textContent = values[i].toFixed(2);
+  setWheelToValue(values[i]);
 }
 
 /* =======================
-   EVENTI
+   Export helpers
+======================= */
+function makeTextLog(){
+  const log = loadLog();
+  if(!log.length) return "Nessun record.";
+  return log.map((r, idx) => `${idx+1}) ${r.animalId} - BCS ${Number(r.bcs).toFixed(2)}`).join("\n");
+}
+
+async function copyToClipboard(text){
+  // fallback robusto
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Lista copiata negli appunti!");
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    alert("Lista copiata negli appunti!");
+  }
+}
+
+function downloadCSV(){
+  const log = loadLog();
+  const rows = [["Animal ID","BCS","Timestamp"]];
+  log.forEach(r => rows.push([r.animalId, Number(r.bcs).toFixed(2), new Date(r.ts).toISOString()]));
+  const csv = rows.map(row => row.map(cell => `"${String(cell).replaceAll('"','""')}"`).join(",")).join("\n");
+
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "bcs_log.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* =======================
+   Eventi
 ======================= */
 startBtn.onclick = () => {
   const id = animalIdInput.value.trim();
-  if(!id){
-    alert("Inserisci Animal ID");
-    return;
-  }
+  if(!id){ alert("Inserisci Animal ID"); return; }
   currentAnimalId = id;
   resetEvaluation();
   showEval();
 };
 
-slider.oninput = () => {
-  values[i] = parseFloat(slider.value);
-  valueText.textContent = values[i].toFixed(2);
-};
-
-prev.onclick = () => {
+prevBtn.onclick = () => {
   if(i>0){ i--; loadStep(); }
 };
 
-next.onclick = () => {
-  if(i<7){
-    i++;
-    loadStep();
-    return;
-  }
-  // calcola media ponderata
+nextBtn.onclick = () => {
+  if(i<7){ i++; loadStep(); return; }
+
+  // calcolo media ponderata
   let num=0, den=0;
   for(let k=0;k<8;k++){ num += values[k]*weights[k]; den += weights[k]; }
   const avg = num/den;
 
-  // salva nel taccuino
+  // salva taccuino
   addToLog(currentAnimalId, avg);
 
   // mostra risultato
   showResult(avg);
 };
 
-newAnimalBtn.onclick = () => {
-  showStart();
+newAnimalBtn.onclick = () => showStart();
+
+clearBtn.onclick = () => {
+  if(confirm("Vuoi davvero svuotare la lista?")) clearLog();
 };
 
-clearListBtn.onclick = () => {
-  const ok = confirm("Vuoi davvero svuotare la lista?");
-  if(ok) clearLog();
+copyBtn.onclick = async () => {
+  await copyToClipboard(makeTextLog());
+};
+
+csvBtn.onclick = () => downloadCSV();
+
+shareBtn.onclick = async () => {
+  const text = makeTextLog();
+  if(navigator.share){
+    try{
+      await navigator.share({ title:"BCS Log", text });
+    }catch(e){
+      // se l'utente annulla, non facciamo nulla
+    }
+  } else {
+    await copyToClipboard(text);
+  }
 };
 
 /* =======================
-   START
+   Start
 ======================= */
+buildWheel();
 renderLog();
 showStart();
 </script>
