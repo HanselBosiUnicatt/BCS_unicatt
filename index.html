@@ -7,24 +7,45 @@
 <style>
 body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
 .container{max-width:900px;margin:auto;padding:20px}
-.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1);margin-bottom:16px}
 h2{margin:0 0 10px 0}
 img{max-width:100%;border-radius:10px}
 .slider{width:100%}
 .big{font-size:28px;font-weight:bold}
-.buttons{display:flex;justify-content:space-between;margin-top:15px}
+.buttons{display:flex;justify-content:space-between;gap:10px;margin-top:15px;flex-wrap:wrap}
 button{padding:10px 16px;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
 .next{background:#111;color:#fff}
 .prev{background:#ddd}
+.danger{background:#c62828;color:#fff}
 .hidden{display:none}
+input[type="text"]{width:100%;padding:12px 12px;border:1px solid #ddd;border-radius:10px;font-size:16px}
+.small{color:#555;font-size:13px;margin-top:6px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid #eee;padding:10px;text-align:left}
+th{background:#fafafa}
+.badge{display:inline-block;background:#eee;padding:4px 8px;border-radius:999px;font-size:12px}
 </style>
 </head>
 
 <body>
 <div class="container">
-  <div class="card">
+
+  <!-- 1) START: inserimento Animal ID -->
+  <div class="card" id="startCard">
+    <h2>Nuovo animale</h2>
+    <label for="animalId"><b>Animal ID</b></label>
+    <input id="animalId" type="text" placeholder="Es. 12345 o codice aziendale">
+    <div class="small">Inserisci l'ID e premi “Inizia valutazione”.</div>
+    <div class="buttons">
+      <button class="next" id="startBtn">Inizia valutazione</button>
+    </div>
+  </div>
+
+  <!-- 2) VALUTAZIONE (il tuo flusso) -->
+  <div class="card hidden" id="evalCard">
+    <div class="small"><span class="badge">Animal ID:</span> <b id="animalIdLabel"></b></div>
     <h2 id="title"></h2>
-    <img id="image">
+    <img id="image" alt="guida valutazione">
     <p>Valore selezionato: <span class="big" id="value">3.00</span></p>
     <input id="slider" class="slider" type="range" min="1" max="5" step="0.25" value="3">
     <div class="buttons">
@@ -33,15 +54,42 @@ button{padding:10px 16px;border:none;border-radius:10px;font-weight:bold;cursor:
     </div>
   </div>
 
-  <div class="card hidden" id="result">
+  <!-- 3) RISULTATO -->
+  <div class="card hidden" id="resultCard">
     <h2>Risultato finale</h2>
-    <p>Media ponderata:</p>
+    <p><span class="badge">Animal ID:</span> <b id="resultAnimalId"></b></p>
+    <p>Media ponderata (BCS):</p>
     <p class="big" id="finalScore"></p>
     <p id="finalComment"></p>
+
+    <div class="buttons">
+      <button class="next" id="newAnimalBtn">Nuovo animale</button>
+      <button class="danger" id="clearListBtn">Svuota lista</button>
+    </div>
   </div>
+
+  <!-- 4) TACCUINO (lista animali) -->
+  <div class="card" id="logCard">
+    <h2>Taccuino BCS</h2>
+    <div class="small">Qui trovi tutti gli animali valutati in questa sessione (e resta salvato anche se ricarichi).</div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Animal ID</th>
+          <th>BCS</th>
+        </tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
+/* =======================
+   CONFIG (come prima)
+======================= */
 const sections = [
  {title:"Profilo dei processi spinosi (PS)", img:"img/s1.png"},
  {title:"Profilo tra PS e PT", img:"img/s2.png"},
@@ -53,11 +101,26 @@ const sections = [
  {title:"Area attacco coda – punta natiche", img:"img/s8.png"}
 ];
 
-// 👉 PESI (modificali se vuoi)
+// PESI (modificali se vuoi)
 const weights = [1,1,1,1,1,1,1,1];
 
+/* =======================
+   STATO
+======================= */
 let i = 0;
 let values = Array(8).fill(3);
+let currentAnimalId = "";
+
+/* =======================
+   DOM
+======================= */
+const startCard = document.getElementById("startCard");
+const evalCard = document.getElementById("evalCard");
+const resultCard = document.getElementById("resultCard");
+
+const animalIdInput = document.getElementById("animalId");
+const startBtn = document.getElementById("startBtn");
+const animalIdLabel = document.getElementById("animalIdLabel");
 
 const title = document.getElementById("title");
 const image = document.getElementById("image");
@@ -65,47 +128,175 @@ const slider = document.getElementById("slider");
 const valueText = document.getElementById("value");
 const prev = document.getElementById("prev");
 const next = document.getElementById("next");
-const result = document.getElementById("result");
+
+const resultAnimalId = document.getElementById("resultAnimalId");
 const finalScore = document.getElementById("finalScore");
 const finalComment = document.getElementById("finalComment");
 
-function load(){
-  title.textContent = sections[i].title;
-  image.src = sections[i].img;
-  slider.value = values[i];
-  valueText.textContent = values[i].toFixed(2);
-  prev.style.visibility = i===0?"hidden":"visible";
-  next.textContent = i===7?"Calcola":"Avanti";
+const newAnimalBtn = document.getElementById("newAnimalBtn");
+const clearListBtn = document.getElementById("clearListBtn");
+
+const logBody = document.getElementById("logBody");
+
+/* =======================
+   TACCUINO: storage
+======================= */
+const STORAGE_KEY = "bcs_log_v1";
+
+function loadLog(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){
+    return [];
+  }
 }
 
-slider.oninput = ()=>{
-  values[i]=parseFloat(slider.value);
+function saveLog(arr){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+function renderLog(){
+  const log = loadLog();
+  logBody.innerHTML = "";
+  log.forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${escapeHtml(row.animalId)}</td>
+      <td><b>${Number(row.bcs).toFixed(2)}</b></td>
+    `;
+    logBody.appendChild(tr);
+  });
+}
+
+function addToLog(animalId, bcs){
+  const log = loadLog();
+  log.push({ animalId, bcs, ts: Date.now() });
+  saveLog(log);
+  renderLog();
+}
+
+function clearLog(){
+  localStorage.removeItem(STORAGE_KEY);
+  renderLog();
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* =======================
+   FLOW
+======================= */
+function resetEvaluation(){
+  i = 0;
+  values = Array(8).fill(3);
+  slider.value = 3;
+  valueText.textContent = "3.00";
+}
+
+function showStart(){
+  startCard.classList.remove("hidden");
+  evalCard.classList.add("hidden");
+  resultCard.classList.add("hidden");
+  animalIdInput.value = "";
+  currentAnimalId = "";
+}
+
+function showEval(){
+  startCard.classList.add("hidden");
+  evalCard.classList.remove("hidden");
+  resultCard.classList.add("hidden");
+  loadStep();
+}
+
+function showResult(avg){
+  evalCard.classList.add("hidden");
+  resultCard.classList.remove("hidden");
+  resultAnimalId.textContent = currentAnimalId;
+  finalScore.textContent = avg.toFixed(2);
+
+  // commenti placeholder (poi me li dai e li mettiamo precisi)
+  if(avg<2) finalComment.textContent="Condizione molto magra";
+  else if(avg<3) finalComment.textContent="Condizione magra";
+  else if(avg<4) finalComment.textContent="Condizione ottimale";
+  else finalComment.textContent="Condizione grassa";
+}
+
+function loadStep(){
+  animalIdLabel.textContent = currentAnimalId;
+  title.textContent = sections[i].title;
+  image.src = sections[i].img;
+
+  slider.value = values[i];
+  valueText.textContent = values[i].toFixed(2);
+
+  prev.style.visibility = i===0 ? "hidden" : "visible";
+  next.textContent = i===7 ? "Calcola" : "Avanti";
+}
+
+/* =======================
+   EVENTI
+======================= */
+startBtn.onclick = () => {
+  const id = animalIdInput.value.trim();
+  if(!id){
+    alert("Inserisci Animal ID");
+    return;
+  }
+  currentAnimalId = id;
+  resetEvaluation();
+  showEval();
+};
+
+slider.oninput = () => {
+  values[i] = parseFloat(slider.value);
   valueText.textContent = values[i].toFixed(2);
 };
 
-prev.onclick = ()=>{ if(i>0){ i--; load(); } };
-
-next.onclick = ()=>{
-  if(i<7){ i++; load(); }
-  else{
-    let num=0,den=0;
-    for(let k=0;k<8;k++){ num+=values[k]*weights[k]; den+=weights[k]; }
-    const avg=num/den;
-    finalScore.textContent=avg.toFixed(2);
-
-    // 👉 COMMENTI FINALI (placeholder)
-    if(avg<2) finalComment.textContent="Condizione molto magra";
-    else if(avg<3) finalComment.textContent="Condizione magra";
-    else if(avg<4) finalComment.textContent="Condizione ottimale";
-    else finalComment.textContent="Condizione grassa";
-
-    document.querySelector(".card").classList.add("hidden");
-    result.classList.remove("hidden");
-  }
+prev.onclick = () => {
+  if(i>0){ i--; loadStep(); }
 };
 
-load();
+next.onclick = () => {
+  if(i<7){
+    i++;
+    loadStep();
+    return;
+  }
+  // calcola media ponderata
+  let num=0, den=0;
+  for(let k=0;k<8;k++){ num += values[k]*weights[k]; den += weights[k]; }
+  const avg = num/den;
+
+  // salva nel taccuino
+  addToLog(currentAnimalId, avg);
+
+  // mostra risultato
+  showResult(avg);
+};
+
+newAnimalBtn.onclick = () => {
+  showStart();
+};
+
+clearListBtn.onclick = () => {
+  const ok = confirm("Vuoi davvero svuotare la lista?");
+  if(ok) clearLog();
+};
+
+/* =======================
+   START
+======================= */
+renderLog();
+showStart();
 </script>
 </body>
 </html>
-
