@@ -21,20 +21,34 @@ const sections=[
 {img:'img/s8.png'}
 ];
 const names=['Profil des processus épineux (PE)','Profil entre PE et PT','Profil des processus transverses (PT)','Profil au-dessus du flanc','Tubérosités coxale et ischiatique','Région entre fesse et hanche','Profil entre les hanches','Zone d’attache de la queue – pointe des fesses'];
-const key='bcs_taccuino_v5';let i=0,vals=Array(8).fill(3),id='';const $=x=>document.getElementById(x);const esc=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));const load=()=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return[]}},save=a=>localStorage.setItem(key,JSON.stringify(a));
+const key='bcs_taccuino_v5';let i=0,vals=Array(8).fill(3),id='';const $=x=>document.getElementById(x);const esc=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const load=()=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){console.error('Lecture du carnet impossible',e);return[]}};
+const save=a=>{try{localStorage.setItem(key,JSON.stringify(a));return true}catch(e){console.error('Sauvegarde du carnet impossible',e);return false}};
 function show(a){$('start').classList.toggle('hidden',a!=='s');$('eval').classList.toggle('hidden',a!=='e');$('result').classList.toggle('hidden',a!=='r')}
 function step(){$('animalLabel').textContent=id;$('guide').src=sections[i].img;$('slider').value=vals[i];$('value').textContent=Number(vals[i]).toFixed(2);$('prev').style.visibility=i?'visible':'hidden';$('next').textContent=i===7?'Calculer':'Suivant'}
-function render(){let a=load();$('log').innerHTML=a.map((r,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(r.animalId)+'</td><td><b>'+Number(r.bcs).toFixed(2)+'</b></td><td><button class="prev" onclick="details('+n+')">Voir</button></td></tr>').join('')}
-window.details=n=>{let r=load()[n];if(!r)return;alert('Animal ID: '+r.animalId+' — BCS: '+Number(r.bcs).toFixed(2)+'\n\n'+(r.sections||[]).map((v,j)=>names[j]+': '+Number(v).toFixed(2)).join('\n'))};
-function textLog(){let a=load();if(!a.length)return 'Aucun enregistrement.';return a.map((r,n)=>(n+1)+') '+r.animalId+' - BCS '+Number(r.bcs).toFixed(2)+'\n'+(r.sections||[]).map((v,j)=>'  - '+names[j]+': '+Number(v).toFixed(2)).join('\n')).join('\n\n')}
+function render(){const a=load();$('log').innerHTML=a.map((r,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(r.animalId)+'</td><td><b>'+Number(r.bcs).toFixed(2)+'</b></td><td><button class="prev" onclick="details('+n+')">Voir</button></td></tr>').join('')}
+window.details=n=>{const r=load()[n];if(!r)return;alert('Animal ID: '+r.animalId+' — BCS: '+Number(r.bcs).toFixed(2)+'\n\n'+(r.sections||[]).map((v,j)=>names[j]+': '+Number(v).toFixed(2)).join('\n'))};
+function textLog(){const a=load();if(!a.length)return 'Aucun enregistrement.';return a.map((r,n)=>(n+1)+') '+r.animalId+' - BCS '+Number(r.bcs).toFixed(2)+'\n'+(r.sections||[]).map((v,j)=>'  - '+names[j]+': '+Number(v).toFixed(2)).join('\n')).join('\n\n')}
 $('startBtn').onclick=()=>{id=$('animalId').value.trim();if(!id){alert('Saisissez l’ID de l’animal');return}i=0;vals=Array(8).fill(3);show('e');step()};
 $('slider').oninput=e=>{vals[i]=Number(e.target.value);$('value').textContent=vals[i].toFixed(2)};
 $('prev').onclick=()=>{if(i){i--;step()}};
-$('next').onclick=()=>{if(i<7){i++;step();return}const avg=vals.reduce((sum,v)=>sum+Number(v),0)/vals.length;const a=load();a.push({animalId:id,bcs:Number(avg.toFixed(2)),sections:[...vals],ts:Date.now()});save(a);$('resultId').textContent=id;$('finalScore').textContent=avg.toFixed(2);$('comment').textContent=avg<2?'État corporel très maigre':avg<3?'État corporel maigre':avg<4?'État corporel optimal':'État corporel gras';render();show('r')};
+$('next').onclick=()=>{
+  if(i<7){i++;step();return}
+  const numericVals=vals.map(Number);
+  if(numericVals.some(v=>!Number.isFinite(v))){alert('Une valeur BCS n’est pas valide.');return}
+  const avg=numericVals.reduce((sum,v)=>sum+v,0)/numericVals.length;
+  $('resultId').textContent=id;
+  $('finalScore').textContent=avg.toFixed(2);
+  $('comment').textContent=avg<2?'État corporel très maigre':avg<3?'État corporel maigre':avg<4?'État corporel optimal':'État corporel gras';
+  show('r');
+  const a=load();
+  a.push({animalId:id,bcs:Number(avg.toFixed(2)),sections:[...numericVals],ts:Date.now()});
+  if(save(a)) render();
+};
 $('newBtn').onclick=()=>{show('s');$('animalId').value=''};
-$('clearBtn').onclick=()=>{if(confirm('Voulez-vous vraiment vider la liste ?')){localStorage.removeItem(key);render()}};
+$('clearBtn').onclick=()=>{if(confirm('Voulez-vous vraiment vider la liste ?')){try{localStorage.removeItem(key)}catch(e){console.error(e)}render()}};
 $('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(textLog());alert('Liste copiée dans le presse-papiers !')}catch{alert(textLog())}};
-$('shareBtn').onclick=async()=>{let t=textLog();if(navigator.share){try{await navigator.share({title:'BCS Log',text:t})}catch{}}else{try{await navigator.clipboard.writeText(t)}catch{alert(t)}}};
-$('csvBtn').onclick=()=>{let a=load(),rows=[['Animal ID','BCS',...names,'Timestamp'],...a.map(r=>[r.animalId,Number(r.bcs).toFixed(2),...(r.sections||[]).map(v=>Number(v).toFixed(2)),new Date(r.ts).toISOString()])],csv=rows.map(r=>r.map(c=>'"'+String(c??'').replaceAll('"','""')+'"').join(',')).join('\n'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),x=document.createElement('a');x.href=u;x.download='bcs_log.csv';document.body.appendChild(x);x.click();x.remove();URL.revokeObjectURL(u)};
+$('shareBtn').onclick=async()=>{const t=textLog();if(navigator.share){try{await navigator.share({title:'BCS Log',text:t})}catch{}}else{try{await navigator.clipboard.writeText(t)}catch{alert(t)}}};
+$('csvBtn').onclick=()=>{const a=load(),rows=[['Animal ID','BCS',...names,'Timestamp'],...a.map(r=>[r.animalId,Number(r.bcs).toFixed(2),...(r.sections||[]).map(v=>Number(v).toFixed(2)),new Date(r.ts).toISOString()])],csv=rows.map(r=>r.map(c=>'"'+String(c??'').replaceAll('"','""')+'"').join(',')).join('\n'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),x=document.createElement('a');x.href=u;x.download='bcs_log.csv';document.body.appendChild(x);x.click();x.remove();URL.revokeObjectURL(u)};
 render();show('s');
 </script></body></html>
