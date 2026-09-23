@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <title>BCS Unicatt</title>
@@ -84,60 +84,60 @@
 
   <!-- START -->
   <div class="card" id="startCard">
-    <div style="font-weight:800;font-size:18px">Nuovo animale</div>
-    <div class="small">Inserisci l’ID e premi “Inizia valutazione”.</div>
+    <div style="font-weight:800;font-size:18px">Nouvel animal</div>
+    <div class="small">Saisissez l’ID et appuyez sur « Commencer l’évaluation ».</div>
     <label for="animalId"><b>Animal ID</b></label>
-    <input id="animalId" type="text" placeholder="Es. 12345 o codice aziendale">
+    <input id="animalId" type="text" placeholder="Ex. 12345 ou code de l’exploitation">
     <div class="buttons">
-      <button class="next" id="startBtn">Inizia valutazione</button>
+      <button class="next" id="startBtn">Commencer l’évaluation</button>
     </div>
   </div>
 
   <!-- VALUTAZIONE -->
   <div class="card hidden" id="evalCard">
     <div class="small"><span class="badge">Animal ID:</span> <b id="animalIdLabel"></b></div>
-    <img id="image" alt="guida valutazione">
+    <img id="image" alt="guide d’évaluation">
 
     <div class="wheelWrap">
-      <div class="small">Seleziona valore (1.00 → 5.00, step 0.25)</div>
+      <div class="small">Sélectionnez une valeur (1.00 → 5.00, pas de 0.25)</div>
       <div class="wheelBox">
         <div class="wheelMarker"></div>
         <div class="wheel" id="wheel"></div>
       </div>
-      <p style="margin:10px 0 0 0">Valore selezionato: <span class="big" id="valueText">3.00</span></p>
+      <p style="margin:10px 0 0 0">Valeur sélectionnée : <span class="big" id="valueText">3.00</span></p>
     </div>
 
     <div class="buttons">
-      <button class="prev" id="prevBtn">Indietro</button>
-      <button class="next" id="nextBtn">Avanti</button>
+      <button class="prev" id="prevBtn">Précédent</button>
+      <button class="next" id="nextBtn">Suivant</button>
     </div>
   </div>
 
   <!-- RISULTATO -->
   <div class="card hidden" id="resultCard">
-    <div style="font-weight:800;font-size:18px">Risultato finale</div>
+    <div style="font-weight:800;font-size:18px">Résultat final</div>
     <p><span class="badge">Animal ID:</span> <b id="resultAnimalId"></b></p>
-    <p>BCS (media ponderata):</p>
+    <p>BCS (moyenne pondérée) :</p>
     <p class="big" id="finalScore"></p>
     <p id="finalComment"></p>
 
     <div class="buttons">
-      <button class="next" id="newAnimalBtn">Nuovo animale</button>
-      <button class="prev" id="copyBtn">Copia lista</button>
-      <button class="prev" id="csvBtn">Scarica CSV</button>
-      <button class="prev" id="shareBtn">Condividi</button>
-      <button class="danger" id="clearBtn">Svuota lista</button>
+      <button class="next" id="newAnimalBtn">Nouvel animal</button>
+      <button class="prev" id="copyBtn">Copier la liste</button>
+      <button class="prev" id="csvBtn">Télécharger le CSV</button>
+      <button class="prev" id="shareBtn">Partager</button>
+      <button class="danger" id="clearBtn">Vider la liste</button>
     </div>
     <div class="small" id="shareHint"></div>
   </div>
 
   <!-- TACCUINO -->
   <div class="card" id="logCard">
-    <div style="font-weight:800;font-size:18px">Taccuino BCS</div>
-    <div class="small">Lista animali valutati (salvata anche se ricarichi la pagina).</div>
+    <div style="font-weight:800;font-size:18px">Carnet BCS</div>
+    <div class="small">Liste des animaux évalués (conservée même après le rechargement de la page).</div>
     <table>
       <thead>
-        <tr><th>#</th><th>Animal ID</th><th>BCS</th><th>Dettagli</th></tr>
+        <tr><th>#</th><th>Animal ID</th><th>BCS</th><th>Détails</th></tr>
       </thead>
       <tbody id="logBody"></tbody>
     </table>
@@ -149,8 +149,8 @@
 <div id="modal">
   <div id="modalCard">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-      <div style="font-weight:900">Dettagli valutazione</div>
-      <button id="closeModal" class="prev" type="button">Chiudi</button>
+      <div style="font-weight:900">Détails de l’évaluation</div>
+      <button id="closeModal" class="prev" type="button">Fermer</button>
     </div>
     <div class="small" id="modalHeader" style="margin-top:8px"></div>
     <div id="modalBody" style="margin-top:10px;line-height:1.7"></div>
@@ -173,26 +173,21 @@ const sections = [
 ];
 
 const sectionNames = [
-  "Profilo dei processi spinosi (PS)",
-  "Profilo tra PS e PT",
-  "Profilo dei processi trasversi (PT)",
-  "Profilo soprastante il fianco",
-  "Tuberosità coxale e ischiatica",
-  "Regione tra natica ed anca",
-  "Profilo tra le anche",
-  "Area attacco coda – punta natiche"
+  "Profil des apophyses épineuses (AE)",
+  "Profil entre AE et AT",
+  "Profil des apophyses transverses (AT)",
+  "Profil au-dessus du flanc",
+  "Tubérosités coxale et ischiatique",
+  "Région entre la fesse et la hanche",
+  "Profil entre les hanches",
+  "Zone de l’attache de la queue – pointe des fesses"
 ];
 
-// Pesi (modifica se vuoi)
 const weights = [1,1,1,1,1,1,1,1];
 
-// Valori ammessi
 const VALUES = [];
 for(let v=1.00; v<=5.0001; v+=0.25) VALUES.push(Number(v.toFixed(2)));
 
-/* =======================
-   STORAGE
-======================= */
 const STORAGE_KEY = "bcs_taccuino_v5";
 
 function loadLog(){
@@ -203,20 +198,12 @@ function saveLog(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
 
 function addToLog(animalId, bcs, sectionScores){
   const log = loadLog();
-  log.push({
-    animalId,
-    bcs: Number(bcs.toFixed(2)),
-    sections: sectionScores.map(x => Number(x.toFixed(2))),
-    ts: Date.now()
-  });
+  log.push({ animalId, bcs: Number(bcs.toFixed(2)), sections: sectionScores.map(x => Number(x.toFixed(2))), ts: Date.now() });
   saveLog(log);
   renderLog();
 }
 
-function clearLog(){
-  localStorage.removeItem(STORAGE_KEY);
-  renderLog();
-}
+function clearLog(){ localStorage.removeItem(STORAGE_KEY); renderLog(); }
 
 function escapeHtml(s){
   return String(s)
@@ -224,39 +211,27 @@ function escapeHtml(s){
     .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
-/* =======================
-   DOM
-======================= */
 const startCard = document.getElementById("startCard");
 const evalCard = document.getElementById("evalCard");
 const resultCard = document.getElementById("resultCard");
-
 const animalIdInput = document.getElementById("animalId");
 const startBtn = document.getElementById("startBtn");
-
 const animalIdLabel = document.getElementById("animalIdLabel");
 const image = document.getElementById("image");
-
 const wheel = document.getElementById("wheel");
 const valueText = document.getElementById("valueText");
-
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
-
 const resultAnimalId = document.getElementById("resultAnimalId");
 const finalScore = document.getElementById("finalScore");
 const finalComment = document.getElementById("finalComment");
-
 const newAnimalBtn = document.getElementById("newAnimalBtn");
 const copyBtn = document.getElementById("copyBtn");
 const csvBtn = document.getElementById("csvBtn");
 const shareBtn = document.getElementById("shareBtn");
 const clearBtn = document.getElementById("clearBtn");
 const shareHint = document.getElementById("shareHint");
-
 const logBody = document.getElementById("logBody");
-
-// Modal (fix)
 const modal = document.getElementById("modal");
 const closeModal = document.getElementById("closeModal");
 const modalHeader = document.getElementById("modalHeader");
@@ -264,27 +239,18 @@ const modalBody = document.getElementById("modalBody");
 
 function openModal(){ modal.style.display = "flex"; }
 function closeModalFn(){ modal.style.display = "none"; }
-
 closeModal.onclick = closeModalFn;
 modal.onclick = (e) => { if(e.target === modal) closeModalFn(); };
 
-/* =======================
-   STATO valutazione
-======================= */
 let i = 0;
 let values = Array(8).fill(3.00);
 let currentAnimalId = "";
 
-/* =======================
-   WHEEL (robusta)
-======================= */
 function buildWheel(){
   wheel.innerHTML = "";
-
   const top = document.createElement("div");
   top.className = "wheelSpacer";
   wheel.appendChild(top);
-
   VALUES.forEach((val) => {
     const div = document.createElement("div");
     div.className = "wheelItem";
@@ -292,34 +258,25 @@ function buildWheel(){
     div.dataset.value = val.toFixed(2);
     wheel.appendChild(div);
   });
-
   const bot = document.createElement("div");
   bot.className = "wheelSpacer";
   wheel.appendChild(bot);
 }
 
-function getWheelItems(){
-  return [...wheel.querySelectorAll(".wheelItem")];
-}
+function getWheelItems(){ return [...wheel.querySelectorAll(".wheelItem")]; }
 
 function getClosestValueIndex(){
   const box = wheel.getBoundingClientRect();
   const centerY = box.top + box.height / 2;
-
   const items = getWheelItems();
   let bestIdx = 0;
   let bestDist = Infinity;
-
   items.forEach((el, idx) => {
     const r = el.getBoundingClientRect();
     const elCenter = r.top + r.height/2;
     const dist = Math.abs(elCenter - centerY);
-    if(dist < bestDist){
-      bestDist = dist;
-      bestIdx = idx;
-    }
+    if(dist < bestDist){ bestDist = dist; bestIdx = idx; }
   });
-
   return bestIdx;
 }
 
@@ -332,10 +289,7 @@ function setWheelToValue(val){
   const idx = VALUES.indexOf(Number(val.toFixed(2)));
   const items = getWheelItems();
   const target = items[Math.max(0, idx)];
-  if(target){
-    target.scrollIntoView({ block:"center", behavior:"instant" });
-    updateActiveItem(idx);
-  }
+  if(target){ target.scrollIntoView({ block:"center", behavior:"instant" }); updateActiveItem(idx); }
 }
 
 let wheelTimer = null;
@@ -350,85 +304,67 @@ function snapWheel(){
   const items = getWheelItems();
   const target = items[idx];
   if(target) target.scrollIntoView({ block:"center", behavior:"smooth" });
-
   const chosen = VALUES[idx];
   values[i] = chosen;
   valueText.textContent = chosen.toFixed(2);
   updateActiveItem(idx);
 }
 
-/* =======================
-   UI FLOW
-======================= */
 function showStart(){
   startCard.classList.remove("hidden");
   evalCard.classList.add("hidden");
   resultCard.classList.add("hidden");
   animalIdInput.value = "";
   currentAnimalId = "";
-  closeModalFn(); // sicurezza
+  closeModalFn();
 }
 
 function showEval(){
   startCard.classList.add("hidden");
   evalCard.classList.remove("hidden");
   resultCard.classList.add("hidden");
-  closeModalFn(); // sicurezza
+  closeModalFn();
   loadStep();
 }
 
 function showResult(avg){
   evalCard.classList.add("hidden");
   resultCard.classList.remove("hidden");
-  closeModalFn(); // sicurezza
-
+  closeModalFn();
   resultAnimalId.textContent = currentAnimalId;
   finalScore.textContent = avg.toFixed(2);
-
-  // placeholder commenti (poi li mettiamo reali)
-  if(avg<2) finalComment.textContent="Condizione molto magra";
-  else if(avg<3) finalComment.textContent="Condizione magra";
-  else if(avg<4) finalComment.textContent="Condizione ottimale";
-  else finalComment.textContent="Condizione grassa";
-
+  if(avg<2) finalComment.textContent="État corporel très maigre";
+  else if(avg<3) finalComment.textContent="État corporel maigre";
+  else if(avg<4) finalComment.textContent="État corporel optimal";
+  else finalComment.textContent="État corporel gras";
   if(navigator.share){
-    shareHint.textContent = "“Condividi” usa il menu del telefono (WhatsApp/Mail/Telegram, ecc.).";
+    shareHint.textContent = "« Partager » utilise le menu de partage du téléphone (WhatsApp, Mail, Telegram, etc.).";
   } else {
-    shareHint.textContent = "Su PC “Condividi” potrebbe non funzionare: usa Copia lista o CSV.";
+    shareHint.textContent = "Sur ordinateur, « Partager » peut ne pas fonctionner : utilisez Copier la liste ou le CSV.";
   }
 }
 
-function resetEvaluation(){
-  i = 0;
-  values = Array(8).fill(3.00);
-}
+function resetEvaluation(){ i = 0; values = Array(8).fill(3.00); }
 
 function loadStep(){
   animalIdLabel.textContent = currentAnimalId;
   image.src = sections[i].img;
-
   prevBtn.style.visibility = i===0 ? "hidden" : "visible";
-  nextBtn.textContent = i===7 ? "Calcola" : "Avanti";
-
+  nextBtn.textContent = i===7 ? "Calculer" : "Suivant";
   valueText.textContent = values[i].toFixed(2);
   setWheelToValue(values[i]);
 }
 
-/* =======================
-   DETTAGLI
-======================= */
 function showDetails(index){
   const log = loadLog();
   const r = log[index];
   if(!r || !Array.isArray(r.sections)){
-    alert("Nessun dettaglio disponibile per questo record.");
+    alert("Aucun détail disponible pour cet enregistrement.");
     return;
   }
-
   modalHeader.textContent = `Animal ID: ${r.animalId} — BCS: ${Number(r.bcs).toFixed(2)}`;
-
   const lines = r.sections.map((v, idx) =>
-    `${escapeHtml(sectionNames[idx] || ("Sezione " + (idx+1)))}: <b>${Number(v).toFixed(2)}</b>`
+    `${escapeHtml(sectionNames[idx] || ("Section " + (idx+1)))}: <b>${Number(v).toFixed(2)}</b>`
   );
   modalBody.innerHTML = lines.join("<br>");
   openModal();
@@ -443,29 +379,23 @@ function renderLog(){
       <td>${idx+1}</td>
       <td>${escapeHtml(r.animalId)}</td>
       <td><b>${Number(r.bcs).toFixed(2)}</b></td>
-      <td><button class="prev detailBtn" data-idx="${idx}" type="button">Vedi</button></td>
+      <td><button class="prev detailBtn" data-idx="${idx}" type="button">Voir</button></td>
     `;
     logBody.appendChild(tr);
   });
-
   document.querySelectorAll(".detailBtn").forEach(btn => {
     btn.onclick = () => showDetails(Number(btn.dataset.idx));
   });
 }
 
-/* =======================
-   EXPORT
-======================= */
 function makeTextLog(includeDetails=true){
   const log = loadLog();
-  if(!log.length) return "Nessun record.";
-
+  if(!log.length) return "Aucun enregistrement.";
   return log.map((r, idx) => {
     const head = `${idx+1}) ${r.animalId} - BCS ${Number(r.bcs).toFixed(2)}`;
     if(!includeDetails) return head;
-
     const details = (r.sections || []).map((v, i) =>
-      `  - ${sectionNames[i] || ("Sezione "+(i+1))}: ${Number(v).toFixed(2)}`
+      `  - ${sectionNames[i] || ("Section "+(i+1))}: ${Number(v).toFixed(2)}`
     ).join("\n");
     return head + "\n" + details;
   }).join("\n\n");
@@ -474,7 +404,7 @@ function makeTextLog(includeDetails=true){
 async function copyToClipboard(text){
   try {
     await navigator.clipboard.writeText(text);
-    alert("Lista copiata negli appunti!");
+    alert("Liste copiée dans le presse-papiers !");
   } catch {
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -482,7 +412,7 @@ async function copyToClipboard(text){
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    alert("Lista copiata negli appunti!");
+    alert("Liste copiée dans le presse-papiers !");
   }
 }
 
@@ -490,7 +420,6 @@ function downloadCSV(){
   const log = loadLog();
   const header = ["Animal ID","BCS", ...sectionNames, "Timestamp"];
   const rows = [header];
-
   log.forEach(r => {
     const row = [
       r.animalId,
@@ -500,11 +429,9 @@ function downloadCSV(){
     ];
     rows.push(row);
   });
-
   const csv = rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"','""')}"`).join(",")).join("\n");
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "bcs_log.csv";
@@ -514,62 +441,39 @@ function downloadCSV(){
   URL.revokeObjectURL(url);
 }
 
-/* =======================
-   EVENTI
-======================= */
 startBtn.onclick = () => {
   const id = animalIdInput.value.trim();
-  if(!id){ alert("Inserisci Animal ID"); return; }
+  if(!id){ alert("Saisissez l’ID de l’animal"); return; }
   currentAnimalId = id;
   resetEvaluation();
   showEval();
 };
 
-prevBtn.onclick = () => {
-  if(i>0){ i--; loadStep(); }
-};
+prevBtn.onclick = () => { if(i>0){ i--; loadStep(); } };
 
 nextBtn.onclick = () => {
-  if(i<7){
-    i++;
-    loadStep();
-    return;
-  }
-
-  // calcolo media ponderata
+  if(i<7){ i++; loadStep(); return; }
   let num=0, den=0;
   for(let k=0;k<8;k++){ num += values[k]*weights[k]; den += weights[k]; }
   const avg = num/den;
-
   addToLog(currentAnimalId, avg, values);
   showResult(avg);
 };
 
 newAnimalBtn.onclick = () => showStart();
-
-clearBtn.onclick = () => {
-  if(confirm("Vuoi davvero svuotare la lista?")) clearLog();
-};
-
-copyBtn.onclick = async () => {
-  await copyToClipboard(makeTextLog(true));
-};
-
+clearBtn.onclick = () => { if(confirm("Voulez-vous vraiment vider la liste ?")) clearLog(); };
+copyBtn.onclick = async () => { await copyToClipboard(makeTextLog(true)); };
 csvBtn.onclick = () => downloadCSV();
-
 shareBtn.onclick = async () => {
   const text = makeTextLog(true);
   if(navigator.share){
     try { await navigator.share({ title:"BCS Log", text }); }
-    catch(e){ /* annullato */ }
+    catch(e){ }
   } else {
     await copyToClipboard(text);
   }
 };
 
-/* =======================
-   START
-======================= */
 buildWheel();
 renderLog();
 showStart();
