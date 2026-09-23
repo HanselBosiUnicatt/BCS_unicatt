@@ -11,22 +11,19 @@ body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}.contain
 <div class="card"><div style="font-weight:800;font-size:18px">Carnet BCS</div><div class="small">Liste des animaux évalués, conservée dans ce navigateur.</div><table><thead><tr><th>#</th><th>Animal ID</th><th>BCS</th><th>Détails</th></tr></thead><tbody id="log"></tbody></table></div>
 </div><script>
 const sections=[
-{t:'PROFIL DES PROCESSUS ÉPINEUX (PE)',r:[['Processus individuels|nettement distincts','Processus individuels|visibles'],['PE avec quelques crêtes|saillantes et anguleuses','Dos lisse,|PE peu visibles'],['Dos plat, PE presque|indiscernables','Enfoncés dans le|tissu adipeux']]},
-{t:'PROFIL ENTRE PROCESSUS ÉPINEUX ET TRANSVERSES',r:[['Dépression profonde','Dépression évidente'],['Légèrement concave','Rectiligne'],['Presque plat','Arrondi (convexe)']]},
-{t:'PROFIL DES PROCESSUS TRANSVERSES (PT)',r:[['PT très saillants, visibles|sur plus de la moitié de leur longueur','Visibles sur 1/2'],['Visibles de 1/2 à 1/3','Visibles de 1/3 à 1/4','Moins de 1/4 visible|lisse, à peine perceptible'],['Bord lisse et arrondi','Bord à peine perceptible','Enfoncé dans le|tissu adipeux']]},
-{t:'PROFIL AU-DESSUS DU FLANC (rumen plein)',r:[['Bord saillant, accentué,|peu charnu','Saillie évidente'],['Saillie perceptible','Saillie à peine perceptible'],['Absente','Bombé, convexe']]},
-{t:'TUBÉROSITÉS COXALE (pointe de hanche) ET ISCHIATIQUE (pointe de fesse)',r:[['Pointues, nettes, sans|couverture adipeuse','Saillantes'],['Lisses','Recouvertes'],['Arrondies avec|tissu adipeux','Enfoncées dans le|tissu adipeux']]},
-{t:'RÉGION ENTRE FESSE ET HANCHE',r:[['Dépression marquée et|absence de chair','Dépression accentuée'],['Fine couche de couverture','Dépression légère'],['Incliné','Plat','Arrondi']]},
-{t:'PROFIL ENTRE LES HANCHES',r:[['Dépression marquée et|accentuée',''],['Dépression évidente','Dépression modérée','Dépression légère'],['Plat','Arrondi']]},
-{t:'ZONE D’ATTACHE DE LA QUEUE ET POINTE DES FESSES',r:[['Os très saillants, profonde|cavité en V sous la queue','Os visibles avec cavité|en U sous la queue'],['Premières traces de|dépôts adipeux','Os peu visibles, cavité|sous la queue peu profonde'],['Os arrondis, graisse, cavité|sous-caudale presque comblée','Os noyés dans la graisse,|cavité sous-caudale absente']]}
+{img:'img/s1.png'},
+{img:'img/s2.png'},
+{img:'img/s3.png'},
+{img:'img/s4.png'},
+{img:'img/s5.png'},
+{img:'img/s6.png'},
+{img:'img/s7.png'},
+{img:'img/s8.png'}
 ];
 const names=['Profil des processus épineux (PE)','Profil entre PE et PT','Profil des processus transverses (PT)','Profil au-dessus du flanc','Tubérosités coxale et ischiatique','Région entre fesse et hanche','Profil entre les hanches','Zone d’attache de la queue – pointe des fesses'];
-const scoreRows=[['1','1.25','1.5','1.75','2'],['2.25','2.5','2.75','3','3.25','3.5'],['3.75','4','4.25','4.5','4.75','5']];
-const esc=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function svg(sec){let x='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720"><rect width="100%" height="100%" fill="white"/><style>text{font-family:Arial;fill:#111}.t{font-size:25px}.d{font-size:19px}.s{font-size:17px;font-weight:bold}.bar{fill:white;stroke:#bbb;stroke-width:1}</style><text x="500" y="45" text-anchor="middle" class="t">'+esc(sec.t)+'</text>';[205,400,595].forEach((y,r)=>{let ds=sec.r[r],n=ds.length;ds.forEach((d,j)=>{if(!d)return;let px=(j+1)*1000/(n+1);d.split('|').forEach((p,k)=>x+='<text x="'+px+'" y="'+(y-88+k*24)+'" text-anchor="middle" class="d">'+esc(p)+'</text>')});x+='<path class="bar" d="M45 '+(y-25)+' H900 V'+(y-48)+' L955 '+(y+5)+' L900 '+(y+58)+' V'+(y+35)+' H45 Z"/>';let sc=scoreRows[r];sc.forEach((v,j)=>{let px=75+j*800/(sc.length-1);x+='<text x="'+px+'" y="'+(y+12)+'" text-anchor="middle" class="s">'+v+'</text>'});if(r===0)x+='<text x="52" y="'+(y+12)+'" class="s">Score</text>'});return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(x+'</svg>')}
 const key='bcs_taccuino_v5';let i=0,vals=Array(8).fill(3),id='';const $=x=>document.getElementById(x);const load=()=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return[]}},save=a=>localStorage.setItem(key,JSON.stringify(a));
 function show(a){$('start').classList.toggle('hidden',a!=='s');$('eval').classList.toggle('hidden',a!=='e');$('result').classList.toggle('hidden',a!=='r')}
-function step(){$('animalLabel').textContent=id;$('guide').src=svg(sections[i]);$('slider').value=vals[i];$('value').textContent=Number(vals[i]).toFixed(2);$('prev').style.visibility=i?'visible':'hidden';$('next').textContent=i===7?'Calculer':'Suivant'}
+function step(){$('animalLabel').textContent=id;$('guide').src=sections[i].img;$('slider').value=vals[i];$('value').textContent=Number(vals[i]).toFixed(2);$('prev').style.visibility=i?'visible':'hidden';$('next').textContent=i===7?'Calculer':'Suivant'}
 function render(){let a=load();$('log').innerHTML=a.map((r,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(r.animalId)+'</td><td><b>'+Number(r.bcs).toFixed(2)+'</b></td><td><button class="prev" onclick="details('+n+')">Voir</button></td></tr>').join('')}
 window.details=n=>{let r=load()[n];if(!r)return;alert('Animal ID: '+r.animalId+' — BCS: '+Number(r.bcs).toFixed(2)+'\n\n'+(r.sections||[]).map((v,j)=>names[j]+': '+Number(v).toFixed(2)).join('\n'))};
 function textLog(){let a=load();if(!a.length)return 'Aucun enregistrement.';return a.map((r,n)=>(n+1)+') '+r.animalId+' - BCS '+Number(r.bcs).toFixed(2)+'\n'+(r.sections||[]).map((v,j)=>'  - '+names[j]+': '+Number(v).toFixed(2)).join('\n')).join('\n\n')}
